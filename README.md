@@ -1,36 +1,133 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AI Image Generator
+
+A Next.js 15 application that uses Google's Imagen AI model to generate images based on text prompts.
+
+## Features
+
+- 🎨 Generate images using Google's Imagen-4.0 model
+- 🖼️ Support for generating 1-4 images per request
+- 📱 Responsive UI built with Tailwind CSS
+- 💾 Download generated images as PNG files
+- ⚡ Built with Next.js 15 and TypeScript
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
 
+- Node.js 18 or later
+- npm or yarn
+- Google AI API key (set up environment variables for production use)
+
+### Installation
+
+1. Clone the repository:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone <repository-url>
+cd images
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Install dependencies:
+```bash
+npm install
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. Run the development server:
+```bash
+npm run dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+4. Open [http://localhost:3000](http://localhost:3000) with your browser to see the application.
+
+## Usage
+
+### Web Interface
+
+1. Enter a text prompt describing the image you want to generate
+2. Select the number of images (1-4)
+3. Click "Generate Images"
+4. View and download the generated images
+
+### Programmatic Usage
+
+The core functionality from the problem statement is implemented in `src/lib/image-generation.ts`:
+
+```typescript
+import { GoogleGenAI } from '@google/genai';
+
+async function main() {
+  const ai = new GoogleGenAI({});
+  const response = await ai.models.generateImages({
+    model: 'imagen-4.0-generate-001',
+    prompt: 'Robot holding a red skateboard',
+    config: {
+      numberOfImages: 4,
+    },
+  });
+
+  let idx = 1;
+  for (const generatedImage of response.generatedImages) {
+    let imgBytes = generatedImage.image.imageBytes;
+    // Process image bytes here
+    console.log(`Generated image ${idx}:`, imgBytes.substring(0, 50) + '...');
+    idx++;
+  }
+}
+
+main();
+```
+
+See `examples/example.ts` for a complete standalone example.
+
+## API Endpoints
+
+- `POST /api/generate` - Generate images based on a text prompt
+
+Request body:
+```json
+{
+  "prompt": "Robot holding a red skateboard",
+  "numberOfImages": 4
+}
+```
+
+## Project Structure
+
+```
+src/
+├── app/
+│   ├── api/generate/route.ts    # API endpoint for image generation
+│   ├── layout.tsx               # Root layout
+│   ├── page.tsx                 # Main UI page
+│   └── globals.css              # Global styles
+├── lib/
+│   └── image-generation.ts      # Core image generation logic
+└── examples/
+    └── example.ts               # Standalone example script
+```
+
+## Technologies Used
+
+- Next.js 15.5.4
+- React 19.1.0
+- TypeScript
+- Tailwind CSS 4
+- Google AI SDK (@google/genai)
+
+## Build and Deploy
+
+```bash
+# Build for production
+npm run build
+
+# Start production server
+npm start
+
+# Lint code
+npm run lint
+```
 
 ## Learn More
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- [Next.js Documentation](https://nextjs.org/docs)
+- [Google AI SDK Documentation](https://ai.google.dev/)
+- [Imagen AI Model](https://deepmind.google/technologies/imagen/)
