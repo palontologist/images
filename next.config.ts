@@ -8,6 +8,11 @@ const nextConfig: NextConfig = {
         hostname: 'ik.imagekit.io',
         pathname: '/cuktenqad/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'pollinations.ai',
+        pathname: '/p/**',
+      },
     ],
   },
 };
