@@ -1,36 +1,56 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+## Overview
 
-## Getting Started
+This project showcases a Next.js image playground with two complementary workflows:
 
-First, run the development server:
+- **Generate** photorealistic images on demand using Google Gemini's `gemini-2.5-flash-image-preview` model.
+- **Upload** existing assets to ImageKit for CDN-backed delivery and optimization.
+
+Everything happens through the single-page experience in `app/page.tsx`.
+
+## Prerequisites
+
+- Node.js 18+ (recommended: the version used by Next.js 15)
+- An ImageKit account
+- Access to the Google Gemini API via [Google AI Studio](https://ai.google.dev/)
+
+## Environment Setup
+
+Create a `.env.local` file at the project root with the required credentials:
+
+```bash
+IMAGEKIT_PUBLIC_KEY=your_public_key
+IMAGEKIT_PRIVATE_KEY=your_private_key
+IMAGEKIT_URL_ENDPOINT=https://ik.imagekit.io/your_path
+GOOGLE_GEMINI_API_KEY=your_google_gemini_key
+```
+
+> The Gemini key is used server-side by the API route at `app/api/generate/route.ts`.
+
+## Install Dependencies
+
+```bash
+npm install
+```
+
+## Run the App
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Visit [http://localhost:3000](http://localhost:3000) to try it out.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Usage
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. **Generate with Gemini** – Enter a natural language prompt and click **Generate Image**. The UI calls `/api/generate`, receives a base64 data URL, and renders the image instantly. You can download the result locally.
+2. **Upload to ImageKit** – Click the upload card to pick a file. The file is converted to base64 in the browser and uploaded through `/api/upload`, which stores it in ImageKit and returns the CDN URL for display.
+3. Review your generated and uploaded assets in their respective galleries below the controls.
 
-## Learn More
+## Troubleshooting
 
-To learn more about Next.js, take a look at the following resources:
+- **Gemini errors**: Ensure `GOOGLE_GEMINI_API_KEY` is present and that your Google Cloud project has access to the `gemini-2.5-flash-image-preview` model.
+- **ImageKit errors**: Double-check the ImageKit keys and URL endpoint. The upload route logs failures to the server console for easier debugging.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Deployment
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+When deploying (for example, to Vercel), configure the same environment variables in the hosting platform. Both API routes execute server-side only, so no secrets are exposed to the browser.

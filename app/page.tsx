@@ -10,12 +10,21 @@ export default function Home() {
     fileId: string;
     fileName: string;
   }>>([]);
-  const [error, setError] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [prompt, setPrompt] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generatedImages, setGeneratedImages] = useState<Array<{
+    id: string;
+    url: string;
+    mimeType: string;
+    prompt: string;
+  }>>([]);
+  const [generationError, setGenerationError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const uploadImage = async (file: File) => {
     setIsUploading(true);
-    setError(null);
+    setUploadError(null);
 
     try {
       const reader = new FileReader();
@@ -40,13 +49,13 @@ export default function Home() {
             fileName: result.data.name
           }]);
         } else {
-          setError(result.error || "Upload failed");
+          setUploadError(result.error || "Upload failed");
         }
         setIsUploading(false);
       };
       reader.readAsDataURL(file);
     } catch {
-      setError("Upload failed");
+      setUploadError("Upload failed");
       setIsUploading(false);
     }
   };
@@ -60,6 +69,51 @@ export default function Home() {
 
   const triggerFileInput = () => {
     fileInputRef.current?.click();
+  };
+
+  const handleGenerateImage = async () => {
+    const trimmedPrompt = prompt.trim();
+
+    if (!trimmedPrompt) {
+      setGenerationError("Please enter a prompt before generating an image.");
+      return;
+    }
+
+    setIsGenerating(true);
+    setGenerationError(null);
+
+    try {
+      const response = await fetch("/api/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: trimmedPrompt }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        const message = result?.error || "Image generation failed";
+        setGenerationError(message);
+        return;
+      }
+
+      const mimeType = typeof result.mimeType === "string" && result.mimeType.length > 0 ? result.mimeType : "image/png";
+      const dataUrl = `data:${mimeType};base64,${result.image}`;
+      const newImage = {
+        id: result.id ?? globalThis.crypto?.randomUUID?.() ?? `${Date.now()}`,
+        url: dataUrl,
+        mimeType,
+        prompt: trimmedPrompt,
+      };
+
+      setGeneratedImages(prev => [newImage, ...prev]);
+      setPrompt("");
+    } catch (error) {
+      console.error("Failed to generate image", error);
+      setGenerationError("Image generation failed");
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   return (
@@ -104,9 +158,35 @@ export default function Home() {
             )}
           </button>
 
-          {error && (
+          {uploadError && (
             <div className="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
-              {error}
+              {uploadError}
+            </div>
+          )}
+        </div>
+
+        {/* Gemini Image Generation Section */}
+        <div className="w-full max-w-md">
+          <h2 className="text-xl font-semibold mb-4 text-center">Generate with Google Gemini</h2>
+
+          <textarea
+            value={prompt}
+            onChange={(event) => setPrompt(event.target.value)}
+            placeholder="Describe the image you want to create"
+            className="w-full rounded-lg border border-gray-300 p-4 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[140px]"
+          />
+
+          <button
+            onClick={handleGenerateImage}
+            disabled={isGenerating || !prompt.trim()}
+            className="mt-4 w-full rounded-lg bg-blue-600 text-white py-3 font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+          >
+            {isGenerating ? "Generating..." : "Generate Image"}
+          </button>
+
+          {generationError && (
+            <div className="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+              {generationError}
             </div>
           )}
         </div>
@@ -140,13 +220,39 @@ export default function Home() {
           </div>
         )}
 
+        {/* Generated Images Display */}
+        {generatedImages.length > 0 && (
+          <div className="w-full max-w-2xl">
+            <h3 className="text-lg font-semibold mb-4">Generated Images</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {generatedImages.map((image) => (
+                <div key={image.id} className="border rounded-lg p-4">
+                  <Image
+                    src={image.url}
+                    alt={image.prompt}
+                    width={512}
+                    height={512}
+                    unoptimized
+                    className="rounded-lg object-cover w-full h-64"
+                  />
+                  <p className="mt-2 text-sm text-gray-600 max-h-12 overflow-hidden">{image.prompt}</p>
+                  <a
+                    href={image.url}
+                    download={`gemini-image-${image.id}.${image.mimeType.split("/")[1] ?? "png"}`}
+                    className="text-blue-500 hover:underline text-sm"
+                  >
+                    Download
+                  </a>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Upload images using ImageKit integration above.
-          </li>
-          <li className="tracking-[-.01em]">
-            Images are automatically optimized and served via CDN.
-          </li>
+          <li className="mb-2 tracking-[-.01em]">Generate images with Google Gemini using natural language prompts.</li>
+          <li className="mb-2 tracking-[-.01em]">Upload images using ImageKit integration above.</li>
+          <li className="tracking-[-.01em]">Images are automatically optimized and served via CDN.</li>
         </ol>
 
         <div className="flex gap-4 items-center flex-col sm:flex-row">
